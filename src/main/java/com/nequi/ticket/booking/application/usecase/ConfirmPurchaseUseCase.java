@@ -1,6 +1,8 @@
 package com.nequi.ticket.booking.application.usecase;
 
+import com.nequi.ticket.booking.domain.exception.InvalidOrderStateException;
 import com.nequi.ticket.booking.domain.exception.OrderNotFoundException;
+import com.nequi.ticket.booking.domain.exception.ReservationExpiredException;
 import com.nequi.ticket.booking.domain.model.TicketStatus;
 import com.nequi.ticket.booking.domain.port.MessagePublisher;
 import com.nequi.ticket.booking.domain.port.OrderRepository;
@@ -23,10 +25,10 @@ public class ConfirmPurchaseUseCase {
                 .switchIfEmpty(Mono.error(new OrderNotFoundException(orderId)))
                 .flatMap(order -> {
                     if (order.status() != TicketStatus.RESERVED) {
-                        return Mono.error(new RuntimeException("Order is not in RESERVED state"));
+                        return Mono.error(new InvalidOrderStateException(orderId, "RESERVED"));
                     }
                     if (order.isExpired()) {
-                        return Mono.error(new RuntimeException("Reservation has expired"));
+                        return Mono.error(new ReservationExpiredException(orderId));
                     }
 
                     return orderRepository.updateStatus(orderId, TicketStatus.PENDING_CONFIRMATION)

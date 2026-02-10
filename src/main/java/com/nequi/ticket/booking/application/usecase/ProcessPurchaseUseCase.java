@@ -1,5 +1,6 @@
 package com.nequi.ticket.booking.application.usecase;
 
+import com.nequi.ticket.booking.domain.exception.EventNotFoundException;
 import com.nequi.ticket.booking.domain.model.TicketStatus;
 import com.nequi.ticket.booking.domain.port.EventRepository;
 import com.nequi.ticket.booking.domain.port.OrderRepository;
@@ -33,7 +34,7 @@ public class ProcessPurchaseUseCase {
                                                 e.getMessage());
                                         return orderRepository.updateStatus(orderId, TicketStatus.FAILED);
                                     }))
-                            .switchIfEmpty(Mono.error(new RuntimeException("Event not found for order: " + orderId)));
+                            .switchIfEmpty(Mono.error(new EventNotFoundException(order.eventId())));
                 })
                 .doOnError(e -> log.error("Error processing purchase for order {}: {}", orderId, e.getMessage()))
                 .then();
