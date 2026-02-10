@@ -31,24 +31,29 @@ Este es un sistema reactivo de reserva de tickets construido con **Java 25**, **
 - **Docker** y **Docker Compose**.
 
 ### Configuración Local
+
 1. **Clonar el repositorio**:
    ```bash
    git clone https://github.com/julianjjo/event_tickets.git
    cd event_tickets
    ```
 
-2. **Levantar servicios de AWS con Docker**:
-   El proyecto utiliza **LocalStack** para emular DynamoDB y SQS localmente.
+2. **Ejecutar todo con Docker**:
+   Este comando construye la aplicación y levanta todos los servicios (App, LocalStack).
    ```bash
-   docker compose up -d
+   docker compose up --build -d
    ```
-   *Esto levantará LocalStack y ejecutará los scripts de inicialización en `./localstack_init` para crear las tablas y las colas.*
+   *Esto levantará la aplicación en `http://localhost:8080` y LocalStack para emular DynamoDB y SQS.*
 
-3. **Construir y ejecutar la aplicación**:
+3. **Alternativa: Desarrollo Local (Hybrid)**:
+   Si prefieres ejecutar solo los servicios de AWS en Docker y la aplicación localmente:
    ```bash
+   # Paso 1: Levantar servicios (LocalStack)
+   docker compose up localstack -d
+
+   # Paso 2: Ejecutar la aplicación
    ./mvnw spring-boot:run
    ```
-   La aplicación estará disponible en `http://localhost:8080`.
 
 ---
 
