@@ -1,0 +1,133 @@
+{
+	"info": {
+		"_postman_id": "8286b2a8-75f3-4d40-9d9e-0e9bcfb76f07",
+		"name": "Nequi Ticket Booking API",
+		"description": "Collection for testing the Reactive Ticket Booking System.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Events",
+			"item": [
+				{
+					"name": "List Events",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/events",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"events"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Event",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Concierto de Rock\",\n    \"date\": \"2026-12-31T20:00:00\",\n    \"location\": \"Estadio Nacional\",\n    \"totalTickets\": 100,\n    \"availableTickets\": 100\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/events",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"events"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reservations",
+			"item": [
+				{
+					"name": "Reserve Seat",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"eventId\": \"{{event_id}}\",\n    \"userId\": \"user_123\",\n    \"quantity\": 2\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/purchases/reserve",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"purchases",
+								"reserve"
+							]
+						},
+						"description": "Note: Replace {{event_id}} with a real ID from List Events"
+					},
+					"response": []
+				},
+				{
+					"name": "Confirm Purchase",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/purchases/confirm/{{order_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"purchases",
+								"confirm",
+								"{{order_id}}"
+							]
+						},
+						"description": "Note: Replace {{order_id}} with the ID returned from Reserve Seat"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "event_id",
+			"value": ""
+		},
+		{
+			"key": "order_id",
+			"value": ""
+		}
+	]
+}
