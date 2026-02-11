@@ -5,11 +5,14 @@ import com.nequi.ticket.booking.application.usecase.GetOrderUseCase;
 import com.nequi.ticket.booking.application.usecase.ReserveSeatUseCase;
 import com.nequi.ticket.booking.domain.model.Order;
 import com.nequi.ticket.booking.infrastructure.entrypoint.rest.dto.ReservationRequest;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
@@ -29,7 +32,8 @@ public class PurchaseController {
     }
 
     @PostMapping("/reserve")
-    public Mono<Order> reserve(@RequestBody ReservationRequest request) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<Order> reserve(@Valid @RequestBody ReservationRequest request) {
         return reserveSeatUseCase.execute(request.eventId(), request.userId(), request.quantity());
     }
 

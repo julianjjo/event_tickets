@@ -19,76 +19,69 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class SQSPurchaseConsumerTest {
 
-    @Mock
-    private SqsAsyncClient sqsClient;
+        @Mock
+        private SqsAsyncClient sqsClient;
 
-    @Mock
-    private ProcessPurchaseUseCase processPurchaseUseCase;
+        @Mock
+        private ProcessPurchaseUseCase processPurchaseUseCase;
 
-    private SQSPurchaseConsumer consumer;
+        private SQSPurchaseConsumer consumer;
 
-    @BeforeEach
-    void setUp() {
-        consumer = new SQSPurchaseConsumer(sqsClient, processPurchaseUseCase);
-    }
-
-    @Test
-    void shouldStartConsuming() {
-        GetQueueUrlResponse urlResponse = GetQueueUrlResponse.builder()
-                .queueUrl("http://localhost:4566/queue/purchase-requests")
-                .build();
-        when(sqsClient.getQueueUrl(any(GetQueueUrlRequest.class)))
-                .thenReturn(CompletableFuture.completedFuture(urlResponse));
-
-        Message message = Message.builder().body("order-1").receiptHandle("handle-1").build();
-        ReceiveMessageResponse receiveResponse = ReceiveMessageResponse.builder()
-                .messages(List.of(message))
-                .build();
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-                .thenReturn(CompletableFuture.completedFuture(receiveResponse));
-
-        when(processPurchaseUseCase.execute("order-1")).thenReturn(Mono.empty());
-
-        DeleteMessageResponse deleteResponse = DeleteMessageResponse.builder().build();
-        when(sqsClient.deleteMessage(any(DeleteMessageRequest.class)))
-                .thenReturn(CompletableFuture.completedFuture(deleteResponse));
-
-        consumer.startConsuming();
-
-        // Allow async subscription to process
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException ignored) {
+        @BeforeEach
+        void setUp() {
+                consumer = new SQSPurchaseConsumer(sqsClient, processPurchaseUseCase);
         }
 
-        verify(sqsClient).getQueueUrl(any(GetQueueUrlRequest.class));
-    }
+        @Test
+        void shouldStartConsuming() throws Exception {
+                GetQueueUrlResponse urlResponse = GetQueueUrlResponse.builder()
+                                .queueUrl("http://localhost:4566/queue/purchase-requests")
+                                .build();
+                when(sqsClient.getQueueUrl(any(GetQueueUrlRequest.class)))
+                                .thenReturn(CompletableFuture.completedFuture(urlResponse));
 
-    @Test
-    void shouldHandleProcessingError() {
-        GetQueueUrlResponse urlResponse = GetQueueUrlResponse.builder()
-                .queueUrl("http://localhost:4566/queue/purchase-requests")
-                .build();
-        when(sqsClient.getQueueUrl(any(GetQueueUrlRequest.class)))
-                .thenReturn(CompletableFuture.completedFuture(urlResponse));
+                Message message = Message.builder().body("order-1").receiptHandle("handle-1").build();
+                ReceiveMessageResponse receiveResponse = ReceiveMessageResponse.builder()
+                                .messages(List.of(message))
+                                .build();
+                when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
+                                .thenReturn(CompletableFuture.completedFuture(receiveResponse));
 
-        Message message = Message.builder().body("order-err").receiptHandle("handle-err").build();
-        ReceiveMessageResponse receiveResponse = ReceiveMessageResponse.builder()
-                .messages(List.of(message))
-                .build();
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-                .thenReturn(CompletableFuture.completedFuture(receiveResponse));
+                when(processPurchaseUseCase.execute("order-1")).thenReturn(Mono.empty());
 
-        when(processPurchaseUseCase.execute("order-err"))
-                .thenReturn(Mono.error(new RuntimeException("Processing failed")));
+                DeleteMessageResponse deleteResponse = DeleteMessageResponse.builder().build();
+                when(sqsClient.deleteMessage(any(DeleteMessageRequest.class)))
+                                .thenReturn(CompletableFuture.completedFuture(deleteResponse));
 
-        consumer.startConsuming();
+                consumer.startConsuming();
+                Thread.sleep(500);
+                consumer.destroy();
 
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException ignored) {
+                verify(sqsClient).getQueueUrl(any(GetQueueUrlRequest.class));
         }
 
-        verify(sqsClient).getQueueUrl(any(GetQueueUrlRequest.class));
-    }
+        @Test
+        void shouldHandleProcessingError() throws Exception {
+                GetQueueUrlResponse urlResponse = GetQueueUrlResponse.builder()
+                                .queueUrl("http://localhost:4566/queue/purchase-requests")
+                                .build();
+                when(sqsClient.getQueueUrl(any(GetQueueUrlRequest.class)))
+                                .thenReturn(CompletableFuture.completedFuture(urlResponse));
+
+                Message message = Message.builder().body("order-err").receiptHandle("handle-err").build();
+                ReceiveMessageResponse receiveResponse = ReceiveMessageResponse.builder()
+                                .messages(List.of(message))
+                                .build();
+                when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
+                                .thenReturn(CompletableFuture.completedFuture(receiveResponse));
+
+                when(processPurchaseUseCase.execute("order-err"))
+                                .thenReturn(Mono.error(new RuntimeException("Processing failed")));
+
+                consumer.startConsuming();
+                Thread.sleep(500);
+                consumer.destroy();
+
+                verify(sqsClient).getQueueUrl(any(GetQueueUrlRequest.class));
+        }
 }

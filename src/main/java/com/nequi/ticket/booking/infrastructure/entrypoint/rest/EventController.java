@@ -3,8 +3,11 @@ package com.nequi.ticket.booking.infrastructure.entrypoint.rest;
 import com.nequi.ticket.booking.application.usecase.CreateEventUseCase;
 import com.nequi.ticket.booking.application.usecase.GetEventUseCase;
 import com.nequi.ticket.booking.application.usecase.ListEventsUseCase;
+import com.nequi.ticket.booking.domain.exception.EventNotFoundException;
 import com.nequi.ticket.booking.domain.model.Event;
 import com.nequi.ticket.booking.infrastructure.entrypoint.rest.dto.EventRequest;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -30,7 +33,8 @@ public class EventController {
     }
 
     @PostMapping
-    public Mono<Event> createEvent(@RequestBody EventRequest request) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<Event> createEvent(@Valid @RequestBody EventRequest request) {
         Event newEvent = new Event(
                 null,
                 request.name(),
@@ -45,6 +49,7 @@ public class EventController {
     @GetMapping("/{id}/availability")
     public Mono<Integer> getAvailability(@PathVariable String id) {
         return getEventUseCase.execute(id)
+                .switchIfEmpty(Mono.error(new EventNotFoundException(id)))
                 .map(Event::availableTickets);
     }
 }
