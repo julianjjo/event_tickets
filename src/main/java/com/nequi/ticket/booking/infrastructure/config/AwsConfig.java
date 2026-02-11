@@ -1,5 +1,7 @@
 package com.nequi.ticket.booking.infrastructure.config;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +22,7 @@ import java.net.URI;
 public class AwsConfig {
 
         private static final Logger log = LoggerFactory.getLogger(AwsConfig.class);
+        private static final ObjectMapper objectMapper = new ObjectMapper();
 
         @Value("${aws.endpoint_url:http://localhost:4566}")
         private String endpoint;
@@ -50,15 +53,14 @@ public class AwsConfig {
                                                 .thenApply(response -> response.secretString())
                                                 .join();
 
-                                String accessKey = secret.contains("\"accessKey\":\"")
-                                                ? secret.split("\"accessKey\":\"")[1].split("\"")[0]
-                                                : "test";
-                                String secretKey = secret.contains("\"secretKey\":\"")
-                                                ? secret.split("\"secretKey\":\"")[1].split("\"")[0]
-                                                : "test";
+                                JsonNode node = objectMapper.readTree(secret);
+                                String accessKey = node.has("accessKey") ? node.get("accessKey").asText() : "test";
+                                String secretKey = node.has("secretKey") ? node.get("secretKey").asText() : "test";
 
                                 return AwsBasicCredentials.create(accessKey, secretKey);
                         } catch (Exception e) {
+                                log.warn("Failed to retrieve credentials from SecretsManager, using defaults: {}",
+                                                e.getMessage());
                                 return AwsBasicCredentials.create("test", "test");
                         }
                 };

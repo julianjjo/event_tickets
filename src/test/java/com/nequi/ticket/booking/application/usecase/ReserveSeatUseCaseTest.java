@@ -1,6 +1,7 @@
 package com.nequi.ticket.booking.application.usecase;
 
 import com.nequi.ticket.booking.domain.exception.InsufficientTicketsException;
+import com.nequi.ticket.booking.domain.exception.InvalidReservationException;
 import com.nequi.ticket.booking.domain.model.Event;
 import com.nequi.ticket.booking.domain.model.Order;
 import com.nequi.ticket.booking.domain.model.TicketStatus;
@@ -31,6 +32,7 @@ class ReserveSeatUseCaseTest {
         void shouldReserveSeatSuccessfully() {
                 Event event = new Event("event-1", "Test", LocalDateTime.now().plusDays(1), "Loc", 100, 100, 0L);
                 eventRepository.setNextEvent(event);
+                eventRepository.setUpdateShouldFail(false);
 
                 StepVerifier.create(reserveSeatUseCase.execute("event-1", "user-1", 5))
                                 .expectNextMatches(order -> order.quantity() == 5
@@ -42,18 +44,34 @@ class ReserveSeatUseCaseTest {
         void shouldFailWhenNotEnoughTickets() {
                 Event event = new Event("event-1", "Test", LocalDateTime.now().plusDays(1), "Loc", 100, 2, 0L);
                 eventRepository.setNextEvent(event);
+                eventRepository.setUpdateShouldFail(true);
 
                 StepVerifier.create(reserveSeatUseCase.execute("event-1", "user-1", 5))
                                 .expectError(InsufficientTicketsException.class)
                                 .verify();
         }
 
-        // Manual Mocks to avoid Mockito/ByteBuddy issues on Java 25
+        @Test
+        void shouldFailWhenQuantityIsZeroOrNegative() {
+                StepVerifier.create(reserveSeatUseCase.execute("event-1", "user-1", 0))
+                                .expectError(InvalidReservationException.class)
+                                .verify();
+
+                StepVerifier.create(reserveSeatUseCase.execute("event-1", "user-1", -1))
+                                .expectError(InvalidReservationException.class)
+                                .verify();
+        }
+
         private static class ManualEventRepository implements EventRepository {
                 private Event nextEvent;
+                private boolean updateShouldFail = false;
 
                 public void setNextEvent(Event event) {
                         this.nextEvent = event;
+                }
+
+                public void setUpdateShouldFail(boolean shouldFail) {
+                        this.updateShouldFail = shouldFail;
                 }
 
                 @Override
@@ -73,6 +91,9 @@ class ReserveSeatUseCaseTest {
 
                 @Override
                 public Mono<Event> updateAvailability(String id, Integer quantity, Long version) {
+                        if (updateShouldFail) {
+                                return Mono.error(new RuntimeException("ConditionalCheckFailedException"));
+                        }
                         return Mono.just(nextEvent.withAvailableTickets(nextEvent.availableTickets() - quantity));
                 }
         }

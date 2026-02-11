@@ -25,25 +25,26 @@ public class ReserveSeatUseCase {
     }
 
     public Mono<Order> execute(String eventId, String userId, Integer quantity) {
+        if (quantity == null || quantity <= 0) {
+            return Mono.error(new InvalidReservationException("Quantity must be at least 1"));
+        }
         if (quantity > 10) {
             return Mono.error(new InvalidReservationException("Maximum 10 tickets per order"));
         }
 
         return eventRepository.findById(eventId)
                 .switchIfEmpty(Mono.error(new EventNotFoundException(eventId)))
-                .flatMap(event -> {
-                    if (event.availableTickets() < quantity) {
-                        return Mono.error(new InsufficientTicketsException(eventId, quantity));
-                    }
-
-                    return orderRepository.save(new Order(
-                            UUID.randomUUID().toString(),
-                            eventId,
-                            userId,
-                            quantity,
-                            TicketStatus.RESERVED,
-                            LocalDateTime.now(),
-                            LocalDateTime.now().plusMinutes(10)));
-                });
+                .flatMap(event -> eventRepository
+                        .updateAvailability(eventId, quantity, event.version())
+                        .onErrorResume(e -> Mono.error(
+                                new InsufficientTicketsException(eventId, quantity)))
+                        .flatMap(updatedEvent -> orderRepository.save(new Order(
+                                UUID.randomUUID().toString(),
+                                eventId,
+                                userId,
+                                quantity,
+                                TicketStatus.RESERVED,
+                                LocalDateTime.now(),
+                                LocalDateTime.now().plusMinutes(10)))));
     }
 }
