@@ -24,10 +24,10 @@ public class AwsConfig {
         private static final Logger log = LoggerFactory.getLogger(AwsConfig.class);
         private static final ObjectMapper objectMapper = new ObjectMapper();
 
-        @Value("${aws.endpoint_url:http://localhost:4566}")
+        @Value("${aws.endpoint_url}")
         private String endpoint;
 
-        @Value("${aws.region:us-east-1}")
+        @Value("${aws.region}")
         private String region;
 
         private static final String SECRET_NAME = "aws/credentials";
@@ -54,14 +54,13 @@ public class AwsConfig {
                                                 .join();
 
                                 JsonNode node = objectMapper.readTree(secret);
-                                String accessKey = node.has("accessKey") ? node.get("accessKey").asText() : "test";
-                                String secretKey = node.has("secretKey") ? node.get("secretKey").asText() : "test";
+                                String accessKey = node.get("accessKey").asText();
+                                String secretKey = node.get("secretKey").asText();
 
                                 return AwsBasicCredentials.create(accessKey, secretKey);
                         } catch (Exception e) {
-                                log.warn("Failed to retrieve credentials from SecretsManager, using defaults: {}",
-                                                e.getMessage());
-                                return AwsBasicCredentials.create("test", "test");
+                                log.error("Failed to retrieve credentials from SecretsManager");
+                                throw new RuntimeException(e);
                         }
                 };
         }
